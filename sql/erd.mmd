@@ -1,0 +1,237 @@
+erDiagram
+    %% ========================================================================
+    %% NovaMart BI Platform — Full Technical ERD (22 tables)
+    %% Complements images/erd_core_entities.png, which shows only the 18
+    %% core/source entities. This file additionally includes the 4
+    %% derived/infrastructure tables: marketing_attribution, customer_cohorts,
+    %% dim_date, quarantine.
+    %% ========================================================================
+
+    countries ||--o{ customers : "country_id"
+    countries ||--o{ orders : "country_id"
+    countries ||--o{ warehouses : "country_id"
+    countries ||--o{ marketing_events : "country_id"
+    countries ||--o{ marketing_spend : "country_id"
+    countries ||--o{ finance_costs : "country_id"
+
+    categories ||--o{ products : "category_id"
+
+    customers ||--o{ orders : "customer_id"
+    customers ||--o{ marketing_events : "customer_id"
+    customers ||--o| customer_cohorts : "customer_id"
+    customers ||--o{ marketing_attribution : "customer_id"
+
+    promotions ||--o{ orders : "promotion_id"
+
+    orders ||--o{ order_items : "order_id"
+    orders ||--o{ payments : "order_id"
+    orders ||--o{ refunds : "order_id"
+    orders ||--o{ shipments : "order_id"
+    orders ||--o{ returns : "order_id"
+    orders ||--o| marketing_attribution : "order_id"
+
+    products ||--o{ order_items : "product_id"
+
+    order_items ||--o{ returns : "order_line_id"
+
+    payments ||--o{ refunds : "payment_id"
+
+    warehouses ||--o{ shipments : "warehouse_id"
+    carriers ||--o{ shipments : "carrier_id"
+
+    shipments ||--o{ returns : "shipment_id"
+    returns ||--o{ refunds : "return_id"
+
+    channels ||--o{ campaigns : "channel_id"
+    channels ||--o{ marketing_events : "channel_id"
+    channels ||--o{ marketing_spend : "channel_id"
+    channels ||--o{ marketing_attribution : "channel_id"
+
+    campaigns ||--o{ marketing_events : "campaign_id"
+    campaigns ||--o{ marketing_spend : "campaign_id"
+    campaigns ||--o{ marketing_attribution : "campaign_id"
+
+    %% dim_date and quarantine are standalone (no FK relationships)
+
+    countries {
+        int country_id PK
+        char_2 country_code
+        varchar country_name
+    }
+    categories {
+        int category_id PK
+        varchar category_name
+    }
+    products {
+        int product_id PK
+        varchar product_name
+        int category_id FK
+        varchar brand
+        tinyint active_flag
+    }
+    customers {
+        int customer_id PK
+        date signup_date
+        int country_id FK
+        varchar age_group
+        varchar gender
+    }
+    promotions {
+        int promotion_id PK
+        varchar promotion_name
+        varchar promotion_type
+        varchar discount_type
+        decimal discount_amount
+        date promotion_start_date
+        date promotion_end_date
+    }
+    orders {
+        int order_id PK
+        int customer_id FK
+        datetime order_timestamp
+        enum status
+        varchar cancellation_reason
+        int country_id FK
+        int promotion_id FK
+        char_3 currency_code
+    }
+    order_items {
+        int order_line_id PK
+        int order_id FK
+        int product_id FK
+        int quantity
+        decimal original_unit_price
+        decimal unit_price
+        decimal line_discount
+        decimal unit_cogs
+    }
+    payments {
+        int payment_id PK
+        int order_id FK
+        datetime payment_timestamp
+        varchar payment_status
+        varchar payment_method
+        decimal payment_amount
+        decimal payment_fee
+        char_3 currency_code
+    }
+    refunds {
+        int refund_id PK
+        int order_id FK
+        int payment_id FK
+        int return_id FK
+        datetime refund_timestamp
+        decimal refund_amount
+        varchar refund_reason
+        char_3 currency_code
+    }
+    warehouses {
+        int warehouse_id PK
+        varchar warehouse_name
+        int country_id FK
+    }
+    carriers {
+        int carrier_id PK
+        varchar carrier_name
+    }
+    shipments {
+        int shipment_id PK
+        int order_id FK
+        int warehouse_id FK
+        int carrier_id FK
+        datetime fulfillment_timestamp
+        datetime shipping_timestamp
+        date expected_delivery_date
+        datetime actual_delivery_timestamp
+        decimal shipping_cost
+        varchar shipment_status
+    }
+    returns {
+        int return_id PK
+        int order_id FK
+        int order_line_id FK
+        int shipment_id FK
+        datetime return_timestamp
+        varchar return_reason
+        int returned_quantity
+        tinyint defect_flag
+        decimal return_cost
+        varchar return_status
+    }
+    channels {
+        int channel_id PK
+        varchar channel_name
+    }
+    campaigns {
+        int campaign_id PK
+        int channel_id FK
+        varchar campaign_name
+    }
+    marketing_events {
+        bigint event_id PK
+        varchar session_id
+        int customer_id FK
+        int campaign_id FK
+        int channel_id FK
+        datetime event_timestamp
+        enum event_type
+        int country_id FK
+        varchar device
+    }
+    marketing_spend {
+        int spend_id PK
+        date spend_date
+        int campaign_id FK
+        int channel_id FK
+        int country_id FK
+        decimal ad_spend
+        bigint impressions
+        bigint clicks
+        char_3 currency_code
+    }
+    finance_costs {
+        int cost_id PK
+        date cost_date
+        varchar cost_type
+        varchar cost_category
+        decimal amount
+        char_3 currency_code
+        int country_id FK
+        varchar description
+    }
+    marketing_attribution {
+        bigint attribution_id PK
+        int order_id FK
+        int customer_id FK
+        int campaign_id FK
+        int channel_id FK
+        datetime touchpoint_timestamp
+        varchar attribution_model
+    }
+    customer_cohorts {
+        int customer_id PK_FK
+        date acquisition_month
+        tinyint is_retained_next_month
+    }
+    dim_date {
+        date date_key PK
+        smallint year
+        tinyint quarter
+        tinyint month
+        varchar month_name
+        tinyint week_of_year
+        tinyint day_of_week
+        tinyint is_weekend
+    }
+    quarantine {
+        bigint quarantine_id PK
+        varchar source_system
+        varchar source_file_or_batch
+        varchar source_record_key
+        varchar dq_rule_id
+        varchar failure_reason
+        json raw_payload
+        datetime detected_at
+        enum resolution_status
+        datetime resolved_at
+    }

@@ -1,0 +1,14 @@
+USE novamart;
+GO
+
+SET STATISTICS IO ON;
+SET STATISTICS TIME ON;
+
+SELECT TOP 20 *
+FROM dbo.vw_customer_value
+ORDER BY lifetime_net_revenue DESC;
+
+SET STATISTICS TIME OFF;
+SET STATISTICS IO OFF;
+GO
+
