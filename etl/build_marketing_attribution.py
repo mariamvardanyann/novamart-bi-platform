@@ -3,6 +3,7 @@ import os
 import pandas as pd
 
 from config import PROCESSED_DIR
+from business_rules import get_eligible_completed_orders
 
 
 LOOKBACK_DAYS = 30
@@ -33,6 +34,13 @@ def build_marketing_attribution():
             "order_timestamp",
         ],
     )
+
+    payments = pd.read_csv(
+        os.path.join(PROCESSED_DIR, "payments.csv"),
+        parse_dates=["payment_timestamp"],
+    )
+
+    orders = get_eligible_completed_orders(orders, payments)
 
     # ========================================================
     # PREPARE ORDERS
@@ -119,7 +127,7 @@ def build_marketing_attribution():
     # LAST-TOUCH ATTRIBUTION
     # ========================================================
     #
-    # For every clean order, find the most recent
+    # For every eligible completed purchase, find the most recent
     # campaign touchpoint from the same customer
     # occurring before the order.
     #

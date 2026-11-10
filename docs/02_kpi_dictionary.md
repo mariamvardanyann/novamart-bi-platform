@@ -10,6 +10,16 @@ This document is the **single source of truth** for every KPI used in the NovaMa
 
 ## Governing Definitions
 
+### Eligible Completed Purchase
+
+For customer, sales, marketing-attribution, and financial KPIs, an **eligible completed purchase** is an order that:
+
+1. has status `paid`, `fulfilled`, `shipped`, or `delivered`; and
+2. has at least one payment record with `payment_status = succeeded`.
+
+`placed` and `cancelled` orders are excluded. The purchase timestamp is the order timestamp; delivery time is not used as the acquisition date.
+
+
 ### Revenue
 
 Unless stated otherwise, **Revenue means Net Revenue**.
@@ -39,7 +49,7 @@ NovaMart uses three profit tiers. A requirement that says only **Profit** means 
 |---|---|---|
 | Gross Profit | `Net Revenue − COGS` | Default profitability measure |
 | Contribution Profit | `Gross Profit − Shipping Cost − Payment Fees − Return Cost` | Operational contribution analysis |
-| Net Profit | `Contribution Profit − Marketing Cost − Operating Cost − Other Expenses` | Finance analysis when cost data exists at compatible grain |
+| Net Profit | `Contribution Profit − Marketing Cost − Operating Cost` | Finance analysis when cost data exists at compatible grain |
 
 `Finance/Cost` must not duplicate shipping, payment, return, or marketing costs already represented in their source systems.
 
@@ -116,7 +126,7 @@ No KPI carries a business-approved target unless explicitly marked. Status value
 | KPI-003 | Gross Profit | `Net Revenue − COGS` | EUR | Monthly | — | Sales + Product | CEO, Sales, Finance |
 | KPI-004 | Gross Margin % | `Gross Profit / Net Revenue × 100` | % | Monthly | Illustrative | Derived | CEO, Sales, Finance |
 | KPI-005 | Contribution Profit | `Gross Profit − Shipping Cost − Payment Fees − Return Cost` | EUR | Monthly | — | Sales + Logistics + Payment | Finance, Operations |
-| KPI-006 | Net Profit | `Contribution Profit − Marketing Cost − Operating Cost − Other Expenses` | EUR | Monthly | Positive | Sales + Product + Logistics + Payment + Marketing + Finance/Cost | Finance |
+| KPI-006 | Net Profit | `Contribution Profit − Marketing Cost − Operating Cost` | EUR | Monthly | Scenario-dependent | Sales + Product + Logistics + Payment + Marketing + Finance/Cost | Finance |
 | KPI-007 | Net Profit Margin % | `Net Profit / Net Revenue × 100` | % | Monthly | Illustrative | Derived | Finance |
 | KPI-008 | Average Order Value (AOV) | `Net Revenue / Completed Eligible Orders` | EUR/order | Monthly | — | Sales + Payment | CEO, Sales, Marketing, Finance |
 | KPI-009 | Units Sold | `SUM(quantity)` over eligible completed non-cancelled order lines | units | Daily/Monthly | — | Sales | Sales |
@@ -143,7 +153,7 @@ No KPI carries a business-approved target unless explicitly marked. Status value
 | KPI-030 | Shipping Cost | `SUM(shipping_cost)` | EUR | Monthly | — | Logistics | Operations, Finance |
 | KPI-031 | Discount % | `Total Discount Amount / Total Original Merchandise Value × 100` | % | Monthly | — | Sales | Sales, Finance |
 | KPI-032 | Promotion Uplift % | `(Promo Net Revenue − Baseline Net Revenue) / Baseline Net Revenue × 100` | % | Per campaign | Illustrative | Sales | Sales |
-| KPI-033 | Cost-to-Revenue Ratio % | `Total Eligible Costs / Net Revenue × 100` | % | Monthly | — | Derived from Logistics + Payment + Marketing + Finance/Cost | Finance |
+| KPI-033 | Operating Cost-to-Revenue Ratio % | `Operating Cost / Net Revenue × 100` | % | Monthly | — | Finance/Cost | Finance |
 | KPI-034 | Marketing ROI % | `(Attributed Net Revenue − Ad Spend) / Ad Spend × 100` | % | Monthly | Illustrative | Marketing + Attribution + Sales | Finance |
 | KPI-035 | Gross Profit Payback Period | `CAC / (AOV × Monthly Purchase Frequency × Gross Margin decimal)` | months | Quarterly | TBD | Derived | Finance |
 

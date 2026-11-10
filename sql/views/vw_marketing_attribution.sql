@@ -25,4 +25,4 @@ GO
 
 SELECT TOP 20 *
 FROM dbo.vw_marketing_attribution
-ORDER BY attributed_orders DESC;ok
+ORDER BY attributed_orders DESC;

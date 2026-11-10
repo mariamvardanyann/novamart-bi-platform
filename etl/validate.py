@@ -55,7 +55,10 @@ def validate_order_items(
 
     return clean, quarantine
 
-def validate_orders(df):
+def validate_orders(
+    df,
+    customers_df=None,
+):
 
     valid_statuses = {
         "placed",
@@ -66,65 +69,68 @@ def validate_orders(df):
         "cancelled",
     }
 
-    currency_valid = (
-        df["currency_code"] == "EUR"
-    )
+    currency_valid = df["currency_code"].eq("EUR")
+    status_valid = df["status"].isin(valid_statuses)
+    duplicate_mask = df.duplicated(keep=False)
 
-    status_valid = (
-        df["status"].isin(
-            valid_statuses
-        )
-    )
+    customer_valid = pd.Series(True, index=df.index)
+    lifecycle_valid = pd.Series(True, index=df.index)
 
-    duplicate_mask = (
-        df.duplicated(
-            keep=False
+    if customers_df is not None:
+        customer_lookup = customers_df[["customer_id", "signup_date"]].copy()
+        customer_lookup["signup_date"] = pd.to_datetime(
+            customer_lookup["signup_date"],
+            errors="coerce",
+        ).dt.normalize()
+
+        signup_lookup = customer_lookup.set_index("customer_id")["signup_date"]
+        resolved_signup = df["customer_id"].map(signup_lookup)
+        customer_valid = resolved_signup.notna()
+
+        order_dates = pd.to_datetime(
+            df["order_timestamp"],
+            errors="coerce",
+        ).dt.normalize()
+        lifecycle_valid = (
+            customer_valid
+            & order_dates.notna()
+            & (order_dates >= resolved_signup)
         )
-    )
 
     valid_mask = (
         currency_valid
         & status_valid
         & ~duplicate_mask
+        & customer_valid
+        & lifecycle_valid
     )
 
-    clean = df[
-        valid_mask
-    ].copy()
-
-    quarantine = df[
-        ~valid_mask
-    ].copy()
+    clean = df[valid_mask].copy()
+    quarantine = df[~valid_mask].copy()
 
     def get_reason(row):
-
         reasons = []
 
         if row["currency_code"] != "EUR":
-            reasons.append(
-                "currency_must_be_EUR"
-            )
+            reasons.append("currency_must_be_EUR")
 
         if row["status"] not in valid_statuses:
-            reasons.append(
-                "invalid_order_status"
-            )
+            reasons.append("invalid_order_status")
 
         if duplicate_mask.loc[row.name]:
-            reasons.append(
-                "duplicate_order"
-            )
+            reasons.append("duplicate_order")
+
+        if not customer_valid.loc[row.name]:
+            reasons.append("customer_not_found")
+        elif not lifecycle_valid.loc[row.name]:
+            reasons.append("order_before_customer_signup")
 
         return "|".join(reasons)
 
-    quarantine["dq_reason"] = (
-        quarantine.apply(
-            get_reason,
-            axis=1,
-        )
-    )
+    quarantine["dq_reason"] = quarantine.apply(get_reason, axis=1)
 
     return clean, quarantine
+
 
 def validate_shipments(df):
 
@@ -355,72 +361,163 @@ def validate_payments(
     return clean, quarantine
 
 
+def _normalize_refunds_to_payment_limit(
+    refunds_df,
+    payment_amount_lookup,
+):
+    """Scale only over-refunded payment groups in the clean layer.
+
+    Raw source rows remain unchanged. The correction is deterministic and keeps
+    every already-resolved refund row while ensuring cumulative refunds never
+    exceed the successful payment amount.
+    """
+
+    corrected = refunds_df.copy()
+    corrected["_refund_ts"] = pd.to_datetime(
+        corrected["refund_timestamp"],
+        errors="coerce",
+    )
+
+    for payment_id, group in corrected.groupby("payment_id", sort=False):
+        if payment_id not in payment_amount_lookup:
+            continue
+
+        limit = float(payment_amount_lookup[payment_id])
+        group_total = float(group["refund_amount"].sum())
+        if group_total <= limit + 0.01:
+            continue
+
+        ordered = group.sort_values(["_refund_ts", "refund_id"]).copy()
+        factor = limit / group_total
+        scaled = (ordered["refund_amount"] * factor).round(2)
+
+        # Make rounding exact at cent precision.
+        rounding_delta = round(limit - float(scaled.sum()), 2)
+        last_idx = scaled.index[-1]
+        scaled.loc[last_idx] = round(float(scaled.loc[last_idx]) + rounding_delta, 2)
+
+        corrected.loc[scaled.index, "refund_amount"] = scaled.values
+
+    return corrected.drop(columns=["_refund_ts"])
+
+
 def validate_refunds(
     refunds_df,
     clean_order_ids,
     clean_return_ids,
+    clean_order_item_order_ids,
+    clean_payments_df,
 ):
 
-    valid_order = (
-        refunds_df["order_id"]
-        .isin(clean_order_ids)
+    successful_payments = clean_payments_df[
+        clean_payments_df["payment_status"].eq("succeeded")
+    ].copy()
+
+    payment_order_lookup = (
+        successful_payments
+        .drop_duplicates(subset=["payment_id"])
+        .set_index("payment_id")["order_id"]
+        .to_dict()
+    )
+    payment_amount_lookup = (
+        successful_payments
+        .drop_duplicates(subset=["payment_id"])
+        .set_index("payment_id")["payment_amount"]
+        .to_dict()
     )
 
-    # NULL return_id is allowed for standalone refunds.
+    valid_order = refunds_df["order_id"].isin(clean_order_ids)
+    has_clean_merchandise = refunds_df["order_id"].isin(
+        clean_order_item_order_ids
+    )
+
+    valid_payment = refunds_df["payment_id"].isin(payment_order_lookup.keys())
+    expected_order = refunds_df["payment_id"].map(payment_order_lookup)
+    payment_matches_order = valid_payment & (
+        expected_order == refunds_df["order_id"]
+    )
+
     valid_return = (
         refunds_df["return_id"].isna()
-        | refunds_df["return_id"].isin(
-            clean_return_ids
-        )
+        | refunds_df["return_id"].isin(clean_return_ids)
     )
+    positive_amount = refunds_df["refund_amount"].gt(0)
 
-    valid_mask = (
+    base_valid_mask = (
         valid_order
+        & has_clean_merchandise
+        & valid_payment
+        & payment_matches_order
         & valid_return
+        & positive_amount
     )
 
-    clean = refunds_df[
-        valid_mask
-    ].copy()
+    clean = refunds_df[base_valid_mask].copy()
+    quarantine = refunds_df[~base_valid_mask].copy()
 
-    quarantine = refunds_df[
-        ~valid_mask
-    ].copy()
+    # DQ-016 resolved correction: normalize aggregate refund amounts only after
+    # reference-quality checks, so invalid/quarantined rows cannot reduce a
+    # legitimate clean refund.
+    clean = _normalize_refunds_to_payment_limit(
+        clean,
+        payment_amount_lookup,
+    )
 
     def get_reason(row):
-
         reasons = []
-
+        if row["order_id"] not in clean_order_ids:
+            reasons.append("order_not_in_clean_orders")
+        if row["order_id"] not in clean_order_item_order_ids:
+            reasons.append("order_has_no_clean_order_items")
+        if row["payment_id"] not in payment_order_lookup:
+            reasons.append("payment_not_successful_or_missing")
+        elif payment_order_lookup[row["payment_id"]] != row["order_id"]:
+            reasons.append("payment_order_mismatch")
         if (
-            row["order_id"]
-            not in clean_order_ids
+            not pd.isna(row["return_id"])
+            and row["return_id"] not in clean_return_ids
         ):
-            reasons.append(
-                "order_not_in_clean_orders"
-            )
-
-        if (
-            not pd.isna(
-                row["return_id"]
-            )
-            and row["return_id"]
-            not in clean_return_ids
-        ):
-            reasons.append(
-                "return_not_in_clean_returns"
-            )
-
+            reasons.append("return_not_in_clean_returns")
+        if row["refund_amount"] <= 0:
+            reasons.append("refund_amount_must_be_positive")
         return "|".join(reasons)
 
-    quarantine[
-        "dq_reason"
-    ] = quarantine.apply(
-        get_reason,
-        axis=1,
-    )
-
+    quarantine["dq_reason"] = quarantine.apply(get_reason, axis=1)
     return clean, quarantine
 
+
+def validate_finance_costs(df):
+    """Validate DQ-019/DQ-020 for Finance/Cost source rows."""
+
+    allowed_cost_types = {
+        "payroll",
+        "software",
+        "rent",
+        "infrastructure",
+        "professional_services",
+        "other",
+    }
+
+    type_valid = df["cost_type"].isin(allowed_cost_types)
+    amount_valid = df["cost_amount"].gt(0)
+    currency_valid = df["currency_code"].eq("EUR")
+
+    valid_mask = type_valid & amount_valid & currency_valid
+    clean = df[valid_mask].copy()
+    quarantine = df[~valid_mask].copy()
+
+    def get_reason(row):
+        reasons = []
+        if row["cost_type"] not in allowed_cost_types:
+            reasons.append("invalid_finance_cost_type")
+        if row["cost_amount"] <= 0:
+            reasons.append("finance_cost_must_be_positive")
+        if row["currency_code"] != "EUR":
+            reasons.append("currency_must_be_EUR")
+        return "|".join(reasons)
+
+    quarantine["dq_reason"] = quarantine.apply(get_reason, axis=1)
+    return clean, quarantine
 
 
 def enforce_clean_order_reference(

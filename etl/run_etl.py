@@ -38,6 +38,7 @@ from validate import (
     validate_promotions,
     validate_payments,
     validate_refunds,
+    validate_finance_costs,
     enforce_clean_order_reference,
     enforce_clean_order_line_reference,
 )
@@ -159,6 +160,10 @@ def main():
     # ORDERS
     # =========================================================
 
+    customers = load_csv(
+        "customers.csv"
+    )
+
     orders = load_csv(
         "orders.csv"
     )
@@ -167,7 +172,8 @@ def main():
         clean_orders,
         quarantine_orders,
     ) = validate_orders(
-        orders
+        orders,
+        customers,
     )
 
     clean_order_ids = set(
@@ -307,6 +313,10 @@ def main():
         "refunds.csv"
     )
 
+    clean_order_item_order_ids = set(
+        clean_order_items["order_id"].astype(int)
+    )
+
     (
         clean_refunds,
         quarantine_refunds,
@@ -314,6 +324,8 @@ def main():
         refunds,
         clean_order_ids,
         clean_return_ids,
+        clean_order_item_order_ids,
+        clean_payments,
     )
 
     save_outputs(
@@ -426,6 +438,27 @@ def main():
         "Orders with invalid promotion "
         "reference reset to NULL: "
         f"{invalid_promotion_count:,}"
+    )
+
+    # =========================================================
+    # FINANCE COSTS
+    # =========================================================
+
+    finance_costs = load_csv(
+        "finance_costs.csv"
+    )
+
+    (
+        clean_finance_costs,
+        quarantine_finance_costs,
+    ) = validate_finance_costs(
+        finance_costs
+    )
+
+    save_outputs(
+        clean_finance_costs,
+        quarantine_finance_costs,
+        "finance_costs.csv",
     )
 
     # =========================================================
@@ -565,6 +598,13 @@ def main():
         quarantine_promotions,
     )
 
+    print_result(
+        "Finance Costs",
+        finance_costs,
+        clean_finance_costs,
+        quarantine_finance_costs,
+    )
+
     # =========================================================
     # PASSTHROUGH REPORT
     # =========================================================
@@ -690,6 +730,12 @@ def main():
         + len(quarantine_promotions)
     )
 
+    assert (
+        len(finance_costs)
+        == len(clean_finance_costs)
+        + len(quarantine_finance_costs)
+    )
+
     # =========================================================
     # FK RECONCILIATION
     # =========================================================
@@ -762,10 +808,9 @@ def main():
 
     assert len(dim_date) == 730
 
-    assert (
-        len(customer_cohorts)
-        == 10_000
-    )
+    # Cohorts include only customers who have at least one eligible completed
+    # purchase, so this count can be lower than the full customer dimension.
+    assert 0 < len(customer_cohorts) <= 10_000
 
     assert (
         marketing_attribution[

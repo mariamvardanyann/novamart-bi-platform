@@ -9,7 +9,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-ALTER   VIEW [dbo].[vw_customer_value]
+CREATE OR ALTER VIEW [dbo].[vw_customer_value]
 AS
 
 WITH order_sales AS (
@@ -32,7 +32,13 @@ WITH order_sales AS (
     INNER JOIN dbo.order_items oi
         ON o.order_id = oi.order_id
 
-    WHERE o.status <> 'cancelled'
+    WHERE o.status IN ('paid', 'fulfilled', 'shipped', 'delivered')
+        AND EXISTS (
+            SELECT 1
+            FROM dbo.payments p_eligible
+            WHERE p_eligible.order_id = o.order_id
+              AND p_eligible.payment_status = 'succeeded'
+        )
 
     GROUP BY
         o.order_id,

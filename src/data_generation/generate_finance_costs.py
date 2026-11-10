@@ -19,7 +19,7 @@ import pandas as pd
 import config
 
 
-N_FINANCE_COSTS_TARGET = 1_500
+N_FINANCE_COSTS_TARGET = config.N_FINANCE_COST_ROWS_TARGET
 
 
 def get_project_root():
@@ -52,56 +52,12 @@ def generate_finance_costs():
         freq="D",
     )
 
-    cost_types = [
-        "warehouse_operations",
-        "technology",
-        "customer_support",
-        "payment_processing",
-        "administration",
-        "logistics_overhead",
-        "marketing_overhead",
-    ]
-
+    cost_types = list(config.COST_TYPES)
     cost_type_weights = [
-        0.22,
-        0.14,
-        0.13,
-        0.12,
-        0.12,
-        0.17,
-        0.10,
+        config.COST_TYPE_WEIGHTS[cost_type]
+        for cost_type in cost_types
     ]
-
-    amount_ranges = {
-        "warehouse_operations": (
-            300,
-            2500,
-        ),
-        "technology": (
-            150,
-            1800,
-        ),
-        "customer_support": (
-            100,
-            1200,
-        ),
-        "payment_processing": (
-            100,
-            900,
-        ),
-        "administration": (
-            150,
-            1500,
-        ),
-        "logistics_overhead": (
-            250,
-            2200,
-        ),
-        "marketing_overhead": (
-            150,
-            1600,
-        ),
-    }
+    amount_ranges = config.COST_AMOUNT_RANGES
 
     rows = []
 
@@ -196,6 +152,10 @@ def validate_finance_costs(
     assert finance_costs[
         "cost_type"
     ].notna().all()
+
+    assert set(finance_costs["cost_type"].unique()).issubset(
+        set(config.COST_TYPES)
+    )
 
     assert finance_costs[
         "cost_amount"

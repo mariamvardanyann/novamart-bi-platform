@@ -34,6 +34,9 @@ QUARANTINE_FILES = {
 
     "promotions":
         "promotions_quarantine.csv",
+
+    "finance_costs":
+        "finance_costs_quarantine.csv",
 }
 
 

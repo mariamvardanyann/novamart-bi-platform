@@ -6,13 +6,15 @@ import numpy as np
 import pandas as pd
 import pyodbc
 
+from config import SQL_DATABASE, SQL_SERVER
+
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-SERVER = r"DESKTOP-6R0D4NK\SQLEXPRESS"
-DATABASE = "novamart"
+SERVER = SQL_SERVER
+DATABASE = SQL_DATABASE
 
 PROJECT_ROOT = os.path.abspath(
     os.path.join(
@@ -217,7 +219,10 @@ def transform_for_sql(
             }
         )
 
-        df["cost_category"] = df["cost_type"]
+        # Finance/Cost contains non-overlapping operating expenses only.
+        # The detailed controlled vocabulary stays in cost_type; category is
+        # the broader analytical bucket used by SQL reporting.
+        df["cost_category"] = "operating"
 
     # ========================================================
     # SHIPMENTS

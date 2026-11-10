@@ -191,6 +191,24 @@ PROMOTION_ARCHETYPES = [
 ]
 assert abs(sum(p["share"] for p in PROMOTION_ARCHETYPES) - 1.0) < 1e-9
 
+# Synthetic demand response used to make promotion archetypes affect order
+# volume, not only discount depth. These are scenario assumptions, not market
+# estimates. A multiplier of 1.45 means the affected dates receive 45% more
+# order-generation weight than their non-promotion baseline.
+PROMOTION_DEMAND_MULTIPLIER = {
+    "strong_uplift_healthy_margin": 1.45,
+    "strong_uplift_margin_erosion": 1.60,
+    "weak_uplift": 1.08,
+    "country_or_category_specific": 1.25,
+}
+
+PROMOTION_ADOPTION_RATE = {
+    "strong_uplift_healthy_margin": 0.48,
+    "strong_uplift_margin_erosion": 0.55,
+    "weak_uplift": 0.22,
+    "country_or_category_specific": 0.35,
+}
+
 # ============================================================================
 # ORDERS (spec §7)
 # ============================================================================
@@ -300,6 +318,23 @@ CHANNEL_COST_PROFILE = {
 # ============================================================================
 N_FINANCE_COST_ROWS_TARGET = 1_500
 COST_TYPES = ["payroll", "software", "rent", "infrastructure", "professional_services", "other"]
+COST_TYPE_WEIGHTS = {
+    "rent": 0.22,
+    "software": 0.14,
+    "payroll": 0.13,
+    "professional_services": 0.22,
+    "other": 0.12,
+    "infrastructure": 0.17,
+}
+COST_AMOUNT_RANGES = {
+    "rent": (300, 2500),
+    "software": (150, 1800),
+    "payroll": (100, 1200),
+    "professional_services": (100, 1600),
+    "other": (150, 1500),
+    "infrastructure": (250, 2200),
+}
+assert abs(sum(COST_TYPE_WEIGHTS.values()) - 1.0) < 1e-9
 
 # ============================================================================
 # INTENTIONAL DATA QUALITY DEFECTS (spec §20)

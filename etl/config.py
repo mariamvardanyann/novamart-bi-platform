@@ -25,3 +25,14 @@ QUARANTINE_DIR = os.path.join(
     "data",
     "quarantine",
 )
+
+# SQL Server connection settings are configurable so the repository does not
+# expose or depend on one developer machine name.
+SQL_SERVER = os.getenv(
+    "NOVAMART_SQL_SERVER",
+    r"localhost\SQLEXPRESS",
+)
+SQL_DATABASE = os.getenv(
+    "NOVAMART_SQL_DATABASE",
+    "novamart",
+)

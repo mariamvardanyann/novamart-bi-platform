@@ -46,7 +46,7 @@ BQ → BR → KPI → Source → Entity/Field → DQ → ETL/Logic → SQL View 
 | OPS-BQ6 / BR-OPS-006 | KPI-025, KPI-027, KPI-030, KPI-029 | shipments, carriers, returns, orders | compatible populations | `vw_carrier_performance` | DB-OPS |
 | FIN-BQ1 / BR-FIN-001 | KPI-001, KPI-003, KPI-005, KPI-006, KPI-004, KPI-007 | sales, product, logistics, payment, marketing, finance_costs | no duplicate costs | `vw_profitability` | DB-FIN |
 | FIN-BQ2 / BR-FIN-002 | KPI-003, KPI-004 | order_items, products | COGS | `vw_product_profitability` | DB-FIN |
-| FIN-BQ3 / BR-FIN-003 | KPI-002, KPI-033 | all eligible cost sources | stable cost scope | `vw_cost_performance` | DB-FIN |
+| FIN-BQ3 / BR-FIN-003 | KPI-002, KPI-033 | finance_costs | stable operating-cost scope | `vw_cost_performance` | DB-FIN |
 | FIN-BQ4 / BR-FIN-004 | KPI-018, KPI-016, KPI-017, KPI-034 | marketing_spend, marketing_attribution, sales | consistent attribution | `vw_marketing_performance` | DB-FIN |
 | FIN-BQ5 / BR-FIN-005 | KPI-008, KPI-031 | orders, order_items, customer segments | aggregate discount | `vw_revenue_performance` | DB-FIN |
 | FIN-BQ6 / BR-FIN-006 | KPI-017, KPI-035 | vw_customer_value, CAC, gross margin | gross-profit payback; dashboard-layer join | `vw_customer_value` | DB-FIN |

@@ -1,8 +1,14 @@
 # NovaMart Business Intelligence Platform
 
-NovaMart is an end-to-end Business Intelligence portfolio project that simulates an e-commerce analytics environment and covers the full workflow from synthetic data generation to decision-ready dashboards.
+**End-to-end synthetic e-commerce BI portfolio** — Python data generation and ETL, SQL Server, KPI validation, and a five-page Power BI report.
 
-> All data in this project is synthetic and was created for educational and portfolio purposes.
+> **Synthetic data:** This project is a simulated business case; financial results and recommendations are descriptive, not real-company performance.
+
+![NovaMart executive overview](dashboard/dashboard_preview/01_executive_overview.png)
+
+**Dashboard pages:** [Executive Overview](dashboard/dashboard_preview/01_executive_overview.png) · [Customer Analysis](dashboard/dashboard_preview/02_customer_analysis.png) · [Marketing Analysis](dashboard/dashboard_preview/03_marketing_analysis.png) · [Operations & Logistics](dashboard/dashboard_preview/04_operations_logistics.png) · [Product & Profitability](dashboard/dashboard_preview/05_product_profitability.png)
+
+**Power BI report:** [NovaMart_BI_Final_Portfolio.pbix](dashboard/NovaMart_BI_Final_Portfolio.pbix)
 
 ## Project Overview
 
@@ -48,6 +54,10 @@ Business Dashboards
 - **BI & Analytics:** Microsoft Power BI Desktop, DAX
 - **Version Control:** Git, GitHub
 
+## Governing Purchase Rule
+
+For customer, sales, marketing-attribution, and financial KPIs, an **eligible completed purchase** must have status `paid`, `fulfilled`, `shipped`, or `delivered` and at least one successful payment. `placed` and `cancelled` orders are excluded.
+
 ## Business Questions
 
 NovaMart was designed to answer questions such as:
@@ -64,7 +74,7 @@ NovaMart was designed to answer questions such as:
 
 ## Analytical Layer
 
-The Power BI model contains **19 analytical SQL views**.
+The SQL analytical layer contains **18 canonical analytical views**, plus `vw_marketing_attribution` as a helper/summary view used for attribution inspection. The Power BI model currently imports 19 `vw_*` objects in total.
 
 ### Revenue & Profitability
 - `vw_revenue_performance`
@@ -86,10 +96,12 @@ The Power BI model contains **19 analytical SQL views**.
 - `vw_customer_retention`
 
 ### Marketing
-- `vw_marketing_attribution`
 - `vw_marketing_performance`
 - `vw_funnel_performance`
 - `vw_promotion_performance`
+
+### Attribution helper
+- `vw_marketing_attribution`
 
 ### Operations
 - `vw_fulfillment_performance`
@@ -119,7 +131,7 @@ Validation covers issues such as:
 - invalid refunds
 - date consistency problems
 
-The final consolidated quarantine dataset contains more than **16,000 rejected records**.
+The final clean/quarantine ETL produces **16,571 quarantined records** under the validated dataset. Large generated/raw/processed CSVs are excluded from Git to keep the repository lightweight.
 
 ## Revenue Reconciliation
 
@@ -127,13 +139,17 @@ A core requirement was ensuring that financial metrics reconcile consistently ac
 
 | Metric | Value |
 |---|---:|
-| Sales Revenue | €12,323,972.99 |
-| Refunds | €933,654.35 |
-| Net Revenue | €11,390,318.64 |
-| Gross Profit | €3,575,760.10 |
-| Net Profit | ~€1.61M |
+| Sales Revenue | €11,261,554.82 |
+| Refunds | €890,386.00 |
+| Net Revenue | €10,371,168.82 |
+| Gross Profit | €2,943,383.00 |
+| Contribution Profit | €2,266,275.67 |
+| Net Profit | -€923,327.19 |
+| Net Margin | -8.90% |
 
-Revenue totals reconcile across:
+> These figures are the final stability-patched dataset totals under the governing eligible-purchase rule and full cost model. The negative Net Profit is an intentional analytical outcome of the synthetic scenario, not a reconciliation error: marketing plus operating expenses exceed the remaining contribution profit.
+
+Revenue and gross-profit totals reconcile across:
 
 - Revenue Performance
 - Product Sales
@@ -168,7 +184,7 @@ Sales Revenue - Refunds = Net Revenue
 - Contribution Profit
 - Net Profit
 - Net Margin
-- Cost-to-Revenue Ratio
+- Operating Cost-to-Revenue Ratio
 
 ### Customer
 - Customer Lifetime Revenue
@@ -192,6 +208,7 @@ Sales Revenue - Refunds = Net Revenue
 - On-Time Delivery Rate
 - Average Delivery Hours
 - Return Rate
+- Unit Return Rate (diagnostic)
 - Shipping Cost
 
 # Power BI Dashboard
@@ -230,7 +247,7 @@ Customer segments are derived from clean order counts:
 11+ orders    → loyal
 ```
 
-The latest incomplete retention cohort is excluded to avoid a false right-censoring drop.
+The latest incomplete retention cohort (July 2026) is excluded to avoid incorrectly displaying 0% N+1 retention when August 2026 activity is not observable.
 
 ## 3. Marketing Analysis
 
@@ -265,10 +282,10 @@ DIVIDE(
 - Return Rate by Carrier
 - Return Rate % by Category
 
-Weighted return rate:
+Current dashboard weighted **unit** return-rate diagnostic:
 
 ```DAX
-Return Rate % =
+Unit Return Rate % =
 DIVIDE(
     SUM(vw_return_performance[returned_units]),
     SUM(vw_return_performance[sold_units]),
@@ -288,7 +305,7 @@ DIVIDE(
 - Top 10 Products by Gross Profit
 - Gross Profit by Category
 - Monthly Net Profit Trend
-- Cost-to-Revenue Ratio Trend
+- Operating Cost-to-Revenue Ratio Trend
 
 ## DAX Measures
 
@@ -314,7 +331,7 @@ DIVIDE(
 ) * 100
 ```
 
-### Cost-to-Revenue Ratio
+### Operating Cost-to-Revenue Ratio
 
 ```DAX
 Cost to Revenue Ratio % =
@@ -330,51 +347,37 @@ DIVIDE(
 - Germany generates the highest Net Revenue among the modeled markets.
 - Electronics is the strongest revenue-generating category.
 - Loyal customers generate the highest lifetime value per customer.
-- Customer retention is relatively stable across observable cohorts.
+- Next-month retention varies across observable cohorts; the final month is excluded because N+1 activity is not observable.
 - Marketing channels have similar conversion rates while campaign ROAS varies considerably.
-- Even the strongest modeled promotions show negative revenue uplift versus the defined pre-promotion baseline.
+- Modeled promotions now show a mix of positive and negative descriptive revenue uplift versus the 28-day pre-promotion baseline; this is a scenario comparison, not a causal estimate.
 - SwiftPost combines strong on-time performance with relatively low average delivery time.
-- Fashion has the highest weighted category return rate.
+- Fashion has one of the highest weighted unit-return rates in the modeled dataset.
+- Despite €10.37M in Net Revenue and €2.94M in Gross Profit, high marketing and operating expenses produce a modeled Net Loss of €0.92M, illustrating why revenue growth alone does not guarantee profitability.
 - Operating cost pressure changes significantly month to month.
-- Profitability remains positive across most of the modeled period.
 
-## Suggested Repository Structure
+## Repository Structure
 
 ```text
-novamart-bi/
-│
+novamart-bi-platform/
 ├── data/
 │   ├── raw/
 │   ├── processed/
-│   └── quarantine/
+│   ├── quarantine/
+│   └── generated/
+├── src/data_generation/
 ├── etl/
-│   ├── generators/
-│   ├── validators/
-│   ├── builders/
-│   └── loader/
 ├── sql/
-│   ├── schema/
+│   ├── schema_sqlserver.sql
 │   ├── views/
-│   ├── indexes/
-│   └── validation/
+│   ├── tests/
+│   └── mysql_archive/
 ├── docs/
-│   ├── 00_project_charter.md
-│   ├── 01_brd.md
-│   ├── 02_kpi_dictionary.md
-│   ├── 03_data_quality.md
-│   ├── 04_data_dictionary.md
-│   ├── 05_traceability_matrix.md
-│   ├── 06_dashboard_requirements.md
-│   └── 07_synthetic_data_specification.md
-├── powerbi/
-│   └── NovaMart_BI_Final.pbix
-├── screenshots/
-│   ├── executive_overview.png
-│   ├── customer_analysis.png
-│   ├── marketing_analysis.png
-│   ├── operations_logistics.png
-│   └── product_profitability.png
+├── dashboard/
+│   ├── NovaMart_BI_Final_Portfolio.pbix
+│   └── dashboard_preview/
+├── images/
 ├── requirements.txt
+├── .env.example
 ├── .gitignore
 └── README.md
 ```
@@ -387,7 +390,7 @@ novamart-bi/
 CREATE DATABASE novamart;
 ```
 
-Run the schema scripts from the SQL folder.
+Run `sql/schema_sqlserver.sql` in SQL Server Management Studio to create the schema.
 
 ### 2. Create and activate a Python virtual environment
 
@@ -401,28 +404,41 @@ Then install dependencies:
 pip install -r requirements.txt
 ```
 
-### 3. Run the synthetic data generation and ETL pipeline
+### 3. Generate synthetic data and run ETL
 
-Generate the data, validate it, create clean/quarantine outputs, and build derived datasets.
+Synthetic data generation scripts are in `src/data_generation/`. Execute them in dependency order, beginning with the reference data, products, customers, campaigns and promotions, and then order/payment/logistics/marketing facts. Once `data/raw/` has been populated by the synthetic defect-injection step, run the ETL:
 
-### 4. Load clean data into SQL Server
+```powershell
+python etl/run_etl.py
+python scripts/validate_final_stability.py
+```
 
-Use the PyODBC loader to populate the `novamart` database.
+The full example dataset is **not committed** to this repository; the included Power BI file demonstrates the validated portfolio snapshot. Regenerating randomized synthetic data may lead to different KPI totals from the displayed snapshot.
+
+### 4. Configure and load clean data into SQL Server
+
+Set the SQL Server instance and database with environment variables (see `.env.example`). For PowerShell, for example:
+
+```powershell
+$env:NOVAMART_SQL_SERVER="localhost\SQLEXPRESS"
+$env:NOVAMART_SQL_DATABASE="novamart"
+```
+
+Then use the PyODBC loader to populate the `novamart` database:
+
+```bash
+python etl/load_to_sqlserver.py
+```
 
 ### 5. Create analytical views
 
-Execute the scripts in:
-
-```text
-sql/views/
-```
-
+Execute the 19 view scripts in `sql/views/` in the dependency order listed in [SQL view instructions](sql/views/README.md). The migration at `sql/patches/final_stability_patch.sql` was used only for the previous v2 database snapshot; **do not run it against a fresh dataset**.
 ### 6. Validate analytical totals
 
 Run:
 
 ```text
-final_sql_validation.sql
+sql/tests/final_sql_validation.sql
 ```
 
 ### 7. Open Power BI
@@ -430,7 +446,7 @@ final_sql_validation.sql
 Open:
 
 ```text
-NovaMart_BI_Final.pbix
+dashboard/NovaMart_BI_Final_Portfolio.pbix
 ```
 
 Refresh the SQL Server connection if required.

@@ -242,6 +242,12 @@ Approximate final distribution:
 - 3–5% cancelled
 - remaining share in valid non-final states such as placed, paid, fulfilled, or shipped near the dataset cutoff
 
+**Analytical purchase eligibility:** customer, sales, marketing-attribution, and financial KPIs treat an order as an eligible completed purchase only when its status is `paid`, `fulfilled`, `shipped`, or `delivered` **and** a successful payment exists. `placed` and `cancelled` orders are not purchase-eligible.
+
+### Customer lifecycle
+- An order may not occur before the referenced customer's `signup_date`.
+- Customer acquisition/cohort KPIs still use the first eligible completed purchase, not signup month.
+
 ### Currency
 - All clean orders must use `EUR`
 
@@ -298,6 +304,12 @@ Promotions must have varied performance:
 - not every customer/order should use a promotion
 
 Promotion dates must be logically valid in the clean layer.
+
+
+### Promotion demand response (v2)
+Promotion archetypes affect both discount depth and synthetic demand. Date-level order-generation weights are increased during active promotions using archetype-specific demand multipliers. When promotions overlap, the strongest active multiplier is used rather than multiplying effects. Promotion assignment also uses archetype-specific adoption rates. These parameters are synthetic scenario assumptions, not estimates of real consumer behavior.
+
+Promotion `revenue_uplift_pct` is a **descriptive pre-period comparison**, calculated against the average daily eligible Net Revenue in the 28 complete days preceding the promotion, scaled to the promotion duration. It is not a causal estimate; overlapping promotions and seasonality can influence the result.
 
 ---
 
@@ -527,13 +539,15 @@ This enables:
 - Approximately 1,500 rows
 
 ### Cost categories
-Examples:
-- payroll
-- software
-- rent
-- infrastructure
-- professional services
-- other
+Controlled `cost_type` vocabulary:
+- `payroll`
+- `software`
+- `rent`
+- `infrastructure`
+- `professional_services`
+- `other`
+
+All six types represent operating expenses. They explicitly exclude carrier shipping charges, per-transaction payment fees, return handling costs, and advertising spend, which are sourced separately.
 
 ### Double-counting prevention
 The finance-cost source must not duplicate cost components already represented elsewhere, including:

@@ -97,7 +97,7 @@ Controlled event vocabulary should support at least: `impression`, `click`, `ses
 
 `cost_id`, `cost_date`, `cost_type`, `cost_category`, `amount`, `currency_code`, optional `country_id`, `description`.
 
-Phase 1 Finance/Cost is for operating and other expenses not already represented in Logistics, Payment, Returns, or Marketing.
+Phase 1 Finance/Cost contains operating expenses not already represented in Logistics, Payment, Returns, or Marketing. `cost_type` uses the controlled vocabulary `payroll`, `software`, `rent`, `infrastructure`, `professional_services`, `other`; `cost_category` is `operating`.
 
 ## 3. Derived Analytical Structures & Canonical View Catalog
 
@@ -143,8 +143,10 @@ stakeholder.
 | `vw_delivery_performance` | On-Time Delivery Rate, avg/median delivery time | BR-OPS-002 |
 | `vw_return_performance` | Return Rate, return reasons, defect rate | BR-OPS-003, BR-OPS-004 |
 | `vw_carrier_performance` | Cross-carrier scorecard (delivery, returns, cost, cancellations) | BR-OPS-006 |
-| `vw_cost_performance` | Cost Growth %, Cost-to-Revenue Ratio, cost composition | BR-FIN-003 |
+| `vw_cost_performance` | Operating Cost Growth %, Operating Cost-to-Revenue Ratio, operating-cost composition | BR-FIN-003 |
 | `vw_profitability` | Gross/Contribution/Net Profit and margins | BR-CEO-003, BR-CEO-004, BR-FIN-001 |
+
+> **Helper view:** `vw_marketing_attribution` is an attribution-summary/helper view for inspection and reconciliation. It is not counted among the 18 canonical dashboard views above.
 
 > Where a BR appears under more than one view (e.g., BR-CEO-004 needs both
 > `vw_revenue_growth` and `vw_profitability`), the dashboard layer joins the

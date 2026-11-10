@@ -259,6 +259,12 @@ def generate_promotions() -> tuple[
     profiles = pd.DataFrame({
         "promotion_id": promotion_ids,
         "promotion_archetype": archetypes,
+        "demand_multiplier": [
+            config.PROMOTION_DEMAND_MULTIPLIER[a] for a in archetypes
+        ],
+        "adoption_rate": [
+            config.PROMOTION_ADOPTION_RATE[a] for a in archetypes
+        ],
     })
 
     return promotions, profiles

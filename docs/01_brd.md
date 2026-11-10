@@ -286,7 +286,7 @@ Full implementation traceability is maintained in `05_traceability_matrix.md`.
 |---|---|---|---|---|
 | BR-FIN-001 | FIN-BQ1 | Report Net Revenue, Gross Profit, Contribution Profit, Net Profit, and margin metrics monthly. | KPI-001, KPI-003, KPI-005, KPI-006, KPI-004, KPI-007 | Where are we generating profit? |
 | BR-FIN-002 | FIN-BQ2 | Report Gross Profit and Gross Margin % by product/category. | KPI-003, KPI-004 | Which products/categories need pricing or portfolio action? |
-| BR-FIN-003 | FIN-BQ3 | Compare Revenue Growth % with Cost Growth and Cost-to-Revenue Ratio. | KPI-002, KPI-033 | Which costs hurt profitability? |
+| BR-FIN-003 | FIN-BQ3 | Compare Revenue Growth % with Operating Cost Growth and Operating Cost-to-Revenue Ratio. | KPI-002, KPI-033 | Which costs hurt profitability? |
 | BR-FIN-004 | FIN-BQ4 | Report ROAS, CAC, CLV/CAC, and Marketing ROI %. | KPI-018, KPI-016, KPI-017, KPI-034 | Which marketing investments are justified? |
 | BR-FIN-005 | FIN-BQ5 | Report AOV and its drivers (units/order, Discount %) by segment. | KPI-008, KPI-031 | What improves revenue per transaction? |
 | BR-FIN-006 | FIN-BQ6 | Report CLV/CAC and Gross Profit Payback Period by acquisition channel/cohort. | KPI-017, KPI-035 | Should we continue the acquisition strategy? |
@@ -304,10 +304,10 @@ Full implementation traceability is maintained in `05_traceability_matrix.md`.
 - Gross Margin uses the same Net Revenue denominator as KPI-004.
 - Product totals reconcile to category totals.
 ### BR-FIN-003 — Cost Efficiency
-- Total Eligible Costs includes documented cost components once each.
-- Cost Growth is computed from the same cost scope in current and comparison periods.
-- Cost-to-Revenue uses KPI-033.
-- Breakdown identifies the cost categories driving deterioration.
+- Operating Cost includes only Finance/Cost expenses not represented in Logistics, Payment, Returns, or Marketing.
+- Operating Cost Growth is computed from the same cost scope in current and comparison periods.
+- Operating Cost-to-Revenue uses KPI-033.
+- Breakdown identifies the operating-cost types driving deterioration.
 ### BR-FIN-004 — Marketing Economics
 - ROAS/CAC/CLV-CAC/Marketing ROI use one attribution model.
 - Attributed revenue is Net Revenue.

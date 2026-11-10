@@ -173,6 +173,9 @@ def build_payment_lookup(
                         "payment_timestamp"
                     ]
                 ),
+            "payment_amount": float(
+                row["payment_amount"]
+            ),
         }
 
     return lookup
@@ -224,6 +227,14 @@ def generate_refunds():
         )
     ].copy()
 
+    # One refund candidate per order prevents multiple return-line refunds from
+    # independently refunding the same full order amount.
+    eligible_returns = (
+        eligible_returns
+        .sort_values(["order_id", "return_timestamp", "return_id"])
+        .drop_duplicates(subset=["order_id"], keep="first")
+    )
+
     if len(
         eligible_returns
     ) < target_linked:
@@ -274,6 +285,10 @@ def generate_refunds():
             ]
         )
 
+        payment_amount = float(
+            payment_data["payment_amount"]
+        )
+
         order_total = (
             order_totals[
                 order_id
@@ -311,6 +326,7 @@ def generate_refunds():
             min(
                 refund_amount,
                 order_total,
+                payment_amount,
             ),
             2,
         )
@@ -439,6 +455,10 @@ def generate_refunds():
             ]
         )
 
+        payment_amount = float(
+            payment_data["payment_amount"]
+        )
+
         payment_timestamp = (
             payment_data[
                 "payment_timestamp"
@@ -459,8 +479,10 @@ def generate_refunds():
         )
 
         refund_amount = round(
-            order_total
-            * percentage,
+            min(
+                order_total * percentage,
+                payment_amount,
+            ),
             2,
         )
 
@@ -640,6 +662,34 @@ def validate_refunds(
             refund_order_id
             == expected_order_id
         )
+
+    # ---------------------------------------------------------
+    # Validate cumulative refundable amount
+    # ---------------------------------------------------------
+
+    successful_payments = (
+        payments.loc[
+            payments["payment_status"] == "succeeded",
+            ["payment_id", "order_id", "payment_amount"],
+        ]
+        .drop_duplicates(subset=["payment_id"])
+    )
+
+    payment_amount_lookup = successful_payments.set_index(
+        "payment_id"
+    )["payment_amount"]
+    payment_order_lookup = successful_payments.set_index(
+        "payment_id"
+    )["order_id"]
+
+    refund_totals = refunds.groupby("payment_id")["refund_amount"].sum()
+    limits = payment_amount_lookup.reindex(refund_totals.index)
+    assert limits.notna().all()
+    assert (refund_totals <= limits + 0.01).all()
+
+    expected_order = refunds["payment_id"].map(payment_order_lookup)
+    assert expected_order.notna().all()
+    assert (expected_order.astype(int) == refunds["order_id"].astype(int)).all()
 
     # ---------------------------------------------------------
     # Validate linked share

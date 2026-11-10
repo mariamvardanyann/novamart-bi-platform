@@ -73,7 +73,7 @@ Required visuals:
 - Monthly Net Revenue, Gross Profit, Contribution Profit, Net Profit.
 - Gross and Net Margin trend.
 - Product/category profitability.
-- Cost category trend and Cost-to-Revenue Ratio.
+- Cost category trend and Operating Cost-to-Revenue Ratio.
 - Marketing economics panel: ROAS, CAC, CLV/CAC, Marketing ROI.
 - Gross Profit Payback Period by channel/cohort.
 - AOV drivers and discount profitability comparison.

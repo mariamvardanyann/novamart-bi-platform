@@ -16,7 +16,6 @@ PASSTHROUGH_TABLES = [
     "products.csv",
     "customers.csv",
     "campaigns.csv",
-    "finance_costs.csv",
 ]
 
 
